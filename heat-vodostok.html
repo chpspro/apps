@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <base target="_top">
+   <meta http-equiv="Permissions-Policy" content="
+      autoplay=self,
+      camera=(self),
+      encrypted-media=(self),
+      fullscreen=*,
+      geolocation=(self),
+      microphone=(self),
+      payment=(self),
+      usb=(self),
+      accelerometer=(self),
+      gyroscope=(self),
+      magnetometer=(self),
+      screen-wake-lock=(self),
+      clipboard-read=(self),
+      clipboard-write=self,
+      web-share=(self)
+   ">
+
+   <meta charset="utf-8">
+   <title>Сборщик НКУ</title>
+   <style>
+      body, html { 
+         width:100vw ;
+         height:100vh ;
+         overflow:hidden ;
+         margin: 0px;
+         display: flex;
+         justify-content: center; /*Центрирование rotateLogo по горизонтали*/
+         align-items: center;     /*Центрирование rotateLogo по вертикали */
+
+         
+
+      }
+      iframe { 
+         width:100% ;
+         height:100% ;
+         border:none ;
+      }
+      
+         
+      #preview {
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         position: fixed;
+         z-index: 1;
+         width: 100%;
+         height: 100%;
+         overflow-x: hidden;
+         background-color: rgb(196, 196, 196);
+         transition: all 2s;
+      }
+
+      .hidden {
+         opacity: 0;
+      }
+
+      .dots-loader {
+         display: flex;
+         gap: 12px;
+      }
+
+      .dots-loader .dot {
+         width: 20px;
+         height: 20px;
+         border-radius: 50%;
+         background-color: #3498db;
+         animation: dots-pulse 1.5s ease-in-out infinite;
+      }
+
+      .dots-loader .dot:nth-child(1) { animation-delay: 0s; }
+      .dots-loader .dot:nth-child(2) { animation-delay: 0.2s; }
+      .dots-loader .dot:nth-child(3) { animation-delay: 0.4s; }
+      .dots-loader .dot:nth-child(4) { animation-delay: 0.6s; }
+      .dots-loader .dot:nth-child(5) { animation-delay: 0.8s; }
+
+      @keyframes dots-pulse {
+         0%, 100% {
+            transform: scale(1);
+            opacity: 0.7;
+            background-color: rgb(255 153 0);
+         }
+         50% {
+            transform: scale(1.5);
+            opacity: 1;
+            background-color: rgb(54 103 249);
+         }
+      }
+      
+      .message {
+         text-align: center;
+         background: white;
+         padding: 40px;
+         border-radius: 10px;
+         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+         max-width: 800px;
+      }
+      .string_1, .string_2{
+         font-size: 20px;
+      }
+      .icon {
+         font-size: 160px;
+      }
+
+    
+   </style>
+   <link rel="icon" href="data:image/png;base64,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" type="image/x-icon">
+</head>
+<body>
+   <div id="preview">
+      <div class="dots-loader">
+         <div class="dot"></div>
+         <div class="dot"></div>
+         <div class="dot"></div>
+         <div class="dot"></div>
+         <div class="dot"></div>
+      </div>
+   </div>
+   
+   <script type="text/javascript">
+      // Функция для загрузки контента
+      function loadContent() {
+         
+         if (isMobileDevice()) {
+               document.body.insertAdjacentHTML('beforeend', mobileHTML);
+               removePreview()
+               // Можно добавить дополнительные действия для мобильных устройств
+               console.log('Обнаружено мобильное устройство - показываем предупреждение');
+         } else {
+            let iframe = document.createElement('iframe')
+            iframe.src = 'https://script.google.com/macros/s/AKfycbx455cjhSR48Z_2BovxkkMgIGV76nPoTdhTsjCzaifXqk6N3WYfpS8vMcqM-GBaqmIISg/exec';
+            iframe.allow="autoplay; camera; microphone; geolocation; fullscreen; midi; encrypted-media; payment; usb; accelerometer; gyroscope; magnetometer; screen-wake-lock; clipboard-read; clipboard-write; web-share"
+            document.body.append(iframe)
+
+            iframe.onload = ()=> {
+               const preview = document.getElementById('preview')
+               preview.classList.add('hidden') /* сделано для плавного исчезновения = в противном случае идёт перемаргивание белым экраном*/
+               setTimeout(removePreview, 3000) // удаление превью нужно сделать через не менее 2 сек, после загрузки фрейма. Иначе происходит МЫРГ белым экраном
+            } 
+         }
+      }
+      // Загружаем контент при загрузке страницы
+      document.addEventListener('DOMContentLoaded', loadContent);
+
+      // HTML для мобильных устройств
+      const mobileHTML = `
+         <div class="message">
+            <div class="icon" style>📱→💻</div>
+            <h2>Приложение недоступно на мобильных устройствах</h2>
+            <p class="string_1">Это приложение работает только на компьютерах.</p>
+            <p class="string_2">Пожалуйста, используйте ПК или ноутбук.</p>
+            <hr style="margin: 20px 0;">
+            <p>Мобильная версия приложения находится в разработке.</p>
+         </div>
+      `;
+
+      function removePreview(){
+         document.getElementById('preview').remove() // элемент превью удаляется чтобы его не было в документе (он уже не нужен)
+      }
+      
+      function isMobileDevice() {
+         // Проверяем User Agent
+         const userAgent = navigator.userAgent.toLowerCase();
+         const mobileKeywords = [
+               'android', 'webos', 'iphone', 'ipad', 'ipod',
+               'blackberry', 'windows phone', 'mobile', 'tablet'
+         ];
+         
+         // Проверяем наличие мобильных ключевых слов в User Agent
+         const isMobileUA = mobileKeywords.some(keyword => 
+               userAgent.includes(keyword)
+         );
+         
+         // Дополнительная проверка по ширине экрана (опционально)
+         const isMobileScreen = window.innerWidth <= 768;
+         
+         // Также проверяем наличие touch-событий
+         const hasTouchPoint = navigator.maxTouchPoints > 0;
+         
+         // Комбинированная проверка: User Agent И (ширина экрана ИЛИ touch-события)
+         return isMobileUA && (isMobileScreen || hasTouchPoint);
+      }
+   
+   </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
